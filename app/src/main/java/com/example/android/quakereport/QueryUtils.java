@@ -35,6 +35,8 @@ public final class QueryUtils {
      * 查询 USGS 数据集并返回 {@link Earthquake} 对象的列表。
      */
     public static List<Earthquake> fetchEarthquakeData(String requestUrl) {
+        Log.i(LOG_TAG,"TEST: fetchEarthquakeData() called");
+
         // Create URL object
         URL url = createUrl(requestUrl);
 

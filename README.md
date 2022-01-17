@@ -1,6 +1,30 @@
 Quake Report App
-学习完课程3:线程与并行14之后的版本
 ===================================
+学习完课程3:线程与并行 之后的版本
+
+增加了列表的空状态、检查网络连接状态、加载指使符等情况的处理
+
+改用Loader之后重新启动的执行顺序是：
+Earthquake Activity onCreate() 
+            -> LoaderManager的initLoader() 
+                            -> onCreateLoader()
+                                    -> EarthQuakeLoader的onStartLoading()
+                                    -> EarthQuakeLoader的loadInBackground()
+                                            -> fetchEarthquakeData()
+                            -> onLoadFinished()
+
+旋转屏幕, 再旋转回来：
+Earthquake Activity onCreate()
+            -> LoaderManager的initLoader()   
+                            -> onLoadFinished()
+
+按下home键，再回到app:
+    ->EarthQuakeLoader的onStartLoading()
+    -> EarthQuakeLoader的loadInBackground()
+            -> fetchEarthquakeData()
+-> onLoadFinished()
+
+
 
 This app displays a list of recent earthquakes in the world
 from the U.S. Geological Survey (USGS) organization.

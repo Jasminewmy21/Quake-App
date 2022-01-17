@@ -17,20 +17,24 @@ package com.example.android.quakereport;
 
 import android.app.LoaderManager;
 import android.app.LoaderManager.LoaderCallbacks;
+import android.content.Context;
 import android.content.Intent;
 import android.content.Loader;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
-
+import android.widget.TextView;
 import java.util.ArrayList;
 import java.util.List;
 
 //https://classroom.udacity.com/courses/ud843/lessons/1335cf7d-bb4f-48c6-8503-f14b127d2abc/concepts/9e3938ea-8018-42ba-8753-1f4b4f5f29c8
+
 /**
  * 在我们的活动中实现 LoaderCallbacks 有些复杂。
  * 首先，我们需要用于实现 LoaderCallbacks 接口的 EarthquakeActivity ，
@@ -55,37 +59,29 @@ public class EarthquakeActivity extends AppCompatActivity implements LoaderCallb
      */
     private static final int EARTHQUAKE_LOADER_ID = 1;
 
+    private TextView mEmptyTextView;
+
+    private View mProgressBar;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        Log.i(LOG_TAG, "TEST: Earthquake activity onCreate() called...");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.earthquake_activity);
 
         // Find a reference to the {@link ListView} in the layout
         ListView earthquakeListView = (ListView) findViewById(R.id.list);
 
+        mEmptyTextView = (TextView) findViewById(R.id.empty_view);
+        earthquakeListView.setEmptyView(mEmptyTextView);
+
+        mProgressBar = findViewById(R.id.loading_spinner);
+
         // Create a new {@link ArrayAdapter} of earthquakes
         mQuakeInfoAdapter = new QuakeInfoAdapter(this, new ArrayList<Earthquake>());
-
         // Set the adapter on the {@link ListView}
         // so the list can be populated in the user interface
         earthquakeListView.setAdapter(mQuakeInfoAdapter);
-
-
-        /**
-         * 最后，要检索地震，需要获取Loader Manager并告知Loader Manager使用指定 ID 初始化 loader，
-         * 第二个参数可用于传递一系列附加信息。
-         * 第三个参数是应接收LoaderCallbacks(以及加载完成时的数据)的对象,也就是本活动将执行的操作。
-         * 此代码将进入EarthquakeActivity 的 onCreate() 方法，以便打开应用时可初始化loader。
-         */
-        LoaderManager loaderManager = getLoaderManager();
-
-        /**
-         * 初始化 loader。传递上面定义的整数 ID 常量并为为捆绑
-         * 传递 null。为 LoaderCallbacks 参数（由于
-         * 此活动实现了 LoaderCallbacks 接口而有效）传递此活动。
-         */
-        loaderManager.initLoader(EARTHQUAKE_LOADER_ID, null, this);
-
         earthquakeListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int position, long id) {
@@ -103,7 +99,41 @@ public class EarthquakeActivity extends AppCompatActivity implements LoaderCallb
             }
         });
 
+        //Get a reference to the ConnectivityManager to check state of network connectivity
+        ConnectivityManager connectivityManager =
+                (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+
+        // Get details on the currently active default data network
+        NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
+
+        // If there is a network connection, fetch data
+        if (networkInfo != null && networkInfo.isConnected()) {
+
+            /**
+             * 最后，要检索地震，需要获取Loader Manager并告知Loader Manager使用指定 ID 初始化 loader，
+             * 第二个参数可用于传递一系列附加信息。
+             * 第三个参数是应接收LoaderCallbacks(以及加载完成时的数据)的对象,也就是本活动将执行的操作。
+             * 此代码将进入EarthquakeActivity 的 onCreate() 方法，以便打开应用时可初始化loader。
+             */
+            LoaderManager loaderManager = getLoaderManager();
+
+            /**
+             * 初始化 loader。传递上面定义的整数 ID 常量并为为捆绑
+             * 传递 null。为 LoaderCallbacks 参数（由于
+             * 此活动实现了 LoaderCallbacks 接口而有效）传递此活动。
+             */
+            Log.i(LOG_TAG, "TEST: calling initLoader()...");
+            loaderManager.initLoader(EARTHQUAKE_LOADER_ID, null, this);
+        } else {
+            // Otherwise, display error
+            // First, hide loading indicator so error message will be visible
+            // Update empty state with no connection error message
+            mProgressBar.setVisibility(View.GONE);
+            mEmptyTextView.setText(R.string.no_internet_connection);
+        }
+
     }
+
 
     /**
      * 我们需要 onCreateLoader()，前提是 LoaderManager已确定具有我们指定的 ID 的 loader 当前未运行，
@@ -115,6 +145,8 @@ public class EarthquakeActivity extends AppCompatActivity implements LoaderCallb
      */
     @Override
     public Loader<List<Earthquake>> onCreateLoader(int i, Bundle bundle) {
+        Log.i(LOG_TAG, "TEST: onCreateLoader() called");
+
         // 为给定 URL 创建新 loader
         return new EarthquakeLoader(this, USGS_REQUEST_URL);
     }
@@ -128,6 +160,20 @@ public class EarthquakeActivity extends AppCompatActivity implements LoaderCallb
      */
     @Override
     public void onLoadFinished(Loader<List<Earthquake>> loader, List<Earthquake> earthquakes) {
+        Log.i(LOG_TAG, "TEST: onLoadFinished() called");
+
+        // 因数据已加载，隐藏加载指示符
+        mProgressBar.setVisibility(View.GONE);
+
+        /**
+         * 为避免首次启动应用时屏幕中闪现“未发现地震。(No earthquakes found.)”消息，
+         * 我们可将空状态 TextView 留空， 直至完成第一次加载。
+         * 在 onLoadFinished 回调 方法中，我们可将文本设置为字符串“No earthquakes found”
+         * 由于此操作的代价在承受范围内，所以 可在每次 loader 完成时设置此文本。
+         * 经过权衡之后，如此操作能获得更好的用户体验。
+         */
+        mEmptyTextView.setText(R.string.no_earthquakes);
+
         // 清除之前地震数据的适配器
         mQuakeInfoAdapter.clear();
 
@@ -147,6 +193,8 @@ public class EarthquakeActivity extends AppCompatActivity implements LoaderCallb
      */
     @Override
     public void onLoaderReset(Loader<List<Earthquake>> loader) {
+        Log.i(LOG_TAG, "TEST: onLoaderReset() called");
+
         // 重置 Loader，以便能够清除现有数据。
         mQuakeInfoAdapter.clear();
     }
