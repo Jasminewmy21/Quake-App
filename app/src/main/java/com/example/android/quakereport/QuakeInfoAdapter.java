@@ -12,6 +12,7 @@ import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 public class QuakeInfoAdapter extends ArrayAdapter<Earthquake> {
 
@@ -20,7 +21,7 @@ public class QuakeInfoAdapter extends ArrayAdapter<Earthquake> {
     private static final String LOCATION_SEPARATOR = "of";
     private static final int LOCATION_SEPARATOR_COUNT = 2;
 
-    public QuakeInfoAdapter(Context context, ArrayList<Earthquake> quakeInfoItems) {
+    public QuakeInfoAdapter(Context context, List<Earthquake> quakeInfoItems) {
         super(context, 0, quakeInfoItems);
     }
 
