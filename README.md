@@ -1,4 +1,5 @@
 Quake Report App
+学习完课程3:线程与并行14之后的版本
 ===================================
 
 This app displays a list of recent earthquakes in the world
