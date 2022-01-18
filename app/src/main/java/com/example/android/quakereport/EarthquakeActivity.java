@@ -26,10 +26,13 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.TextView;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -134,6 +137,27 @@ public class EarthquakeActivity extends AppCompatActivity implements LoaderCallb
 
     }
 
+    /**
+     * 覆盖 EarthquakeActivity.java 中的一些方法以使用 菜单，然后在用户单击菜单项时作出响应
+     * @param menu
+     * @return
+     */
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.main, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+        if (id == R.id.action_settings) {
+            Intent settingsIntent = new Intent(this, SettingActivity.class);
+            startActivity(settingsIntent);
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
 
     /**
      * 我们需要 onCreateLoader()，前提是 LoaderManager已确定具有我们指定的 ID 的 loader 当前未运行，
