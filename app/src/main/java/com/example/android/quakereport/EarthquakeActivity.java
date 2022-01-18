@@ -45,7 +45,7 @@ import java.util.List;
  * 首先，我们需要用于实现 LoaderCallbacks 接口的 EarthquakeActivity ，
  * 以及用于指定 loader 返回内容（本例中为 Earthquake）的泛型参数。
  */
-public class EarthquakeActivity extends AppCompatActivity implements LoaderCallbacks<List<Earthquake>> {
+public class EarthquakeActivity extends AppCompatActivity implements LoaderCallbacks<List<Earthquake>>, SharedPreferences.OnSharedPreferenceChangeListener {
 
     public static final String LOG_TAG = EarthquakeActivity.class.getName();
 
@@ -53,7 +53,7 @@ public class EarthquakeActivity extends AppCompatActivity implements LoaderCallb
 
     //作为静态常量存储是因为这个Activity外，没有其他类需要引用它
     private static final String USGS_REQUEST_URL =
-           "https://earthquake.usgs.gov/fdsnws/event/1/query";
+            "https://earthquake.usgs.gov/fdsnws/event/1/query";
     /**
      * 地震 loader ID 的常量值。我们可选择任意整数。
      * 仅当使用多个 loader 时该设置才起作用。
@@ -138,6 +138,25 @@ public class EarthquakeActivity extends AppCompatActivity implements LoaderCallb
 
     }
 
+    @Override
+    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+        if (key.equals(getString(R.string.settings_min_magnitude_key)) ||
+                key.equals(getString(R.string.settings_order_by_key))) {
+
+            // Clear the ListView as a new query will be kicked off
+            mQuakeInfoAdapter.clear();
+
+            // Hide the empty state text view as the loading indicator will be displayed
+            mEmptyTextView.setVisibility(View.GONE);
+
+            // Show the loading indicator while new data is being fetched
+            mProgressBar.setVisibility(View.VISIBLE);
+
+            // Restart the loader to requery the USGS as the query settings have been updated
+            getLoaderManager().restartLoader(EARTHQUAKE_LOADER_ID, null, this);
+        }
+    }
+
     /**
      * 覆盖 EarthquakeActivity.java 中的一些方法以使用 菜单，然后在用户单击菜单项时作出响应
      *
@@ -177,15 +196,20 @@ public class EarthquakeActivity extends AppCompatActivity implements LoaderCallb
         String minMag = sharedPreferences.getString(
                 getString(R.string.settings_min_magnitude_key),
                 getString(R.string.settings_min_magnitude_default));
+
+        String orderby = sharedPreferences.getString(
+                getString(R.string.settings_order_by_key),
+                getString(R.string.settings_order_by_default));
+
         Uri baseUri = Uri.parse(USGS_REQUEST_URL);
         Uri.Builder uriBuilder = baseUri.buildUpon();
 
         //顺序不影响
-        uriBuilder.appendQueryParameter("format","geojson");
-        uriBuilder.appendQueryParameter("eventtype","earthquake");
-        uriBuilder.appendQueryParameter("orderby","time");
-        uriBuilder.appendQueryParameter("minmag",minMag);
-        uriBuilder.appendQueryParameter("limit","10");
+        uriBuilder.appendQueryParameter("format", "geojson");
+        uriBuilder.appendQueryParameter("eventtype", "earthquake");
+        uriBuilder.appendQueryParameter("orderby", orderby);
+        uriBuilder.appendQueryParameter("minmag", minMag);
+        uriBuilder.appendQueryParameter("limit", "10");
 
 
         Log.i(LOG_TAG, "TEST: onCreateLoader() uri: " + uriBuilder.toString());
@@ -217,7 +241,7 @@ public class EarthquakeActivity extends AppCompatActivity implements LoaderCallb
         mEmptyTextView.setText(R.string.no_earthquakes);
 
         // 清除之前地震数据的适配器
-        mQuakeInfoAdapter.clear();
+//        mQuakeInfoAdapter.clear();
 
         // 如果存在 {@link Earthquake} 的有效列表，则将其添加到适配器的
         // 数据集。这将触发 ListView 执行更新。
