@@ -20,10 +20,12 @@ import android.app.LoaderManager.LoaderCallbacks;
 import android.content.Context;
 import android.content.Intent;
 import android.content.Loader;
+import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Menu;
@@ -51,8 +53,7 @@ public class EarthquakeActivity extends AppCompatActivity implements LoaderCallb
 
     //作为静态常量存储是因为这个Activity外，没有其他类需要引用它
     private static final String USGS_REQUEST_URL =
-            "https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&orderby=time&minmag=5&limit=10";
-
+           "https://earthquake.usgs.gov/fdsnws/event/1/query";
     /**
      * 地震 loader ID 的常量值。我们可选择任意整数。
      * 仅当使用多个 loader 时该设置才起作用。
@@ -139,6 +140,7 @@ public class EarthquakeActivity extends AppCompatActivity implements LoaderCallb
 
     /**
      * 覆盖 EarthquakeActivity.java 中的一些方法以使用 菜单，然后在用户单击菜单项时作出响应
+     *
      * @param menu
      * @return
      */
@@ -171,8 +173,24 @@ public class EarthquakeActivity extends AppCompatActivity implements LoaderCallb
     public Loader<List<Earthquake>> onCreateLoader(int i, Bundle bundle) {
         Log.i(LOG_TAG, "TEST: onCreateLoader() called");
 
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        String minMag = sharedPreferences.getString(
+                getString(R.string.settings_min_magnitude_key),
+                getString(R.string.settings_min_magnitude_default));
+        Uri baseUri = Uri.parse(USGS_REQUEST_URL);
+        Uri.Builder uriBuilder = baseUri.buildUpon();
+
+        //顺序不影响
+        uriBuilder.appendQueryParameter("format","geojson");
+        uriBuilder.appendQueryParameter("eventtype","earthquake");
+        uriBuilder.appendQueryParameter("orderby","time");
+        uriBuilder.appendQueryParameter("minmag",minMag);
+        uriBuilder.appendQueryParameter("limit","10");
+
+
+        Log.i(LOG_TAG, "TEST: onCreateLoader() uri: " + uriBuilder.toString());
         // 为给定 URL 创建新 loader
-        return new EarthquakeLoader(this, USGS_REQUEST_URL);
+        return new EarthquakeLoader(this, uriBuilder.toString());
     }
 
     /**
